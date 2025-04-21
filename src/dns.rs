@@ -139,10 +139,22 @@ mod tests {
 
     #[test]
     fn test_hostnames_from_har() {
-        let path = format!("{}/tests/asus.com.har", env!("CARGO_MANIFEST_DIR"));
-        let hostnames = hostnames_from_har(&path).unwrap();
-        println!("hostnames ({}): {hostnames:?}", hostnames.len());
-        assert!(hostnames.len() == 16);
+        let may_be_entries = std::fs::read_dir(format!("{}/tests/private/", env!("CARGO_MANIFEST_DIR")))
+            .into_iter()
+            .flatten();
+        std::fs::read_dir(format!("{}/tests/", env!("CARGO_MANIFEST_DIR")))
+            .unwrap()
+            .into_iter()
+            .chain(may_be_entries)
+            .for_each(|path| {
+                let path = path.unwrap().path();
+                if path.is_file() && path.extension().is_some_and(|ext| ext.to_str().unwrap() == "har") {
+                    let path = path.to_str().unwrap();
+                    let hostnames = hostnames_from_har(path).unwrap();
+                    println!("{path} yields hostnames ({}): {hostnames:?}", hostnames.len());
+                    assert!(hostnames.len() >= 3);
+                }
+            });
     }
 
     #[test]

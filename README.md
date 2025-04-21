@@ -19,7 +19,6 @@ If you have a VPN that you launch to access some website, but you don't want to 
 ## Limitations (TODO)
 
 - Currently the tool converts every endpoint found in dumps into a IPv4 subnet of /16, which is kinda stupid. Ideally we should query the _Whois_ service (RIPE or ARIN) and obtain the precise ASNs
-- Parallel processing of dumps with [rayon](https://github.com/rayon-rs/rayon)
 - Support directives of other VPN types, not only Wireguard
 - More unit-tests
 - "Validation" mode, like checking that every endpoint does really go into the VPN established

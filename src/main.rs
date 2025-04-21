@@ -4,13 +4,26 @@ mod dns;
 use dns::*;
 mod host;
 use host::Host;
+use rayon::prelude::*;
+
+fn parse_hars_from_cmdline() -> StrResult<HashSet<String>> {
+    let parse_results = std::env::args()
+        .skip(1)
+        .collect::<Vec<String>>()
+        .into_par_iter()
+        .map(|file| hostnames_from_har(&file))
+        .collect::<Vec<StrResult<HashSet<String>>>>();
+
+    let ok_hosts = parse_results.into_iter().collect::<StrResult<Vec<HashSet<String>>>>()?;
+
+    Ok(ok_hosts
+        .into_iter()
+        .flat_map(|hs| hs.into_iter())
+        .collect::<HashSet<String>>())
+}
 
 fn gen_wg_routes() -> StrResult<String> {
-    let hosts = std::env::args().skip(1).try_fold(HashSet::new(), |mut acc, arg| {
-        let hostnames = hostnames_from_har(&arg)?;
-        hostnames.into_iter().for_each(|hostname| { acc.insert(hostname); });
-        Ok::<HashSet<_>, String>(acc)
-    })?;
+    let hosts = parse_hars_from_cmdline()?;
 
     let hosts_and_ips = hosts.clone().into_iter().map(|host| -> (String, StrResult<HashSet<String>>) {
         (
@@ -55,8 +68,8 @@ fn gen_wg_routes() -> StrResult<String> {
         })
         .collect::<HashMap<String, String>>();
 
-    println!("Resolved hosts:\n{ok_hosts:?}\n");
-    println!("Unresolved hosts:\n{fail_hosts:?}\n");
+    println!("\nResolved hosts:\n{ok_hosts:?}\n");
+    println!("\nUnresolved hosts:\n{fail_hosts:?}\n");
 
     let host_util = Host::from_proc_net_tcp()?;
 
